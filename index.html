@@ -1,0 +1,381 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kafi Chowdhury - Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff; }
+    .section-title { font-size: 2.5rem; font-weight: 800; color: #facc15; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .card { transition: transform 0.3s, box-shadow 0.3s; }
+    .card:hover { transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    .skill-bar { height: 10px; background: #4b5563; border-radius: 5px; overflow: hidden; }
+    .skill-progress { height: 100%; background: #facc15; transition: width 1s ease-in-out; }
+    .filter-btn { transition: background 0.3s; }
+    .filter-btn.active { background: #facc15; color: #1e40af; }
+    .game-card { width: 80px; height: 80px; perspective: 1000px; }
+    .game-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+    .game-card.flipped .game-card-inner { transform: rotateY(180deg); }
+    .game-card-front, .game-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+    .game-card-front { background: #1e40af; color: #fff; font-size: 1.5rem; }
+    .game-card-back { background: #facc15; color: #1e40af; font-size: 1.5rem; transform: rotateY(180deg); }
+    .flip-card { perspective: 1000px; width: 200px; height: 200px; margin: 10px; }
+    .flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+    .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
+    .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; background: #1e40af; }
+    .flip-card-back { transform: rotateY(180deg); background: #fff; color: #1e40af; }
+    .project-image { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    @media (max-width: 640px) {
+      .section-title { font-size: 2rem; }
+      .flip-card { width: 150px; height: 150px; margin: 5px; }
+      .project-list { grid-template-columns: 1fr; }
+      #gameBoard { grid-template-columns: repeat(2, 1fr); }
+      nav { flex-wrap: wrap; justify-content: center; }
+      nav a { margin: 5px; }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="text-center py-10">
+    <h1 class="text-5xl font-extrabold text-yellow-400 animate-bounce">Kafi Chowdhury</h1>
+    <p class="text-2xl mt-2 text-gray-200">Web Developer | System Programmer | Innovator</p>
+    <p class="mt-3 text-lg">
+      Dhaka, Bangladesh | 
+      <a href="mailto:kafichowdhury9696@gmail.com" class="text-yellow-300 hover:underline">kafichowdhury9696@gmail.com</a> | 
+      <a href="https://github.com/Kafi-Chowdhury" target="_blank" class="text-yellow-300 hover:underline">GitHub</a> | 
+      <a href="https://drive.google.com/drive/folders/1rwvHhmdE3CW3TJFzwrGPT2RDhsRzTa55?usp=sharing" target="_blank" class="text-yellow-300 hover:underline">Drive</a>
+    </p>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="flex justify-center space-x-8 py-4 bg-blue-900 bg-opacity-80 sticky top-0 z-10">
+    <a href="#about" class="text-yellow-300 hover:text-yellow-400 font-semibold">About</a>
+    <a href="#education" class="text-yellow-300 hover:text-yellow-400 font-semibold">Education</a>
+    <a href="#skills" class="text-yellow-300 hover:text-yellow-400 font-semibold">Skills</a>
+    <a href="#projects" class="text-yellow-300 hover:text-yellow-400 font-semibold">Projects</a>
+    <a href="#design" class="text-yellow-300 hover:text-yellow-400 font-semibold">Design</a>
+    <a href="#game" class="text-yellow-300 hover:text-yellow-400 font-semibold">Game</a>
+    <a href="#contact" class="text-yellow-300 hover:text-yellow-400 font-semibold">Contact</a>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto p-6">
+    <!-- About -->
+    <section id="about" class="my-12">
+      <h2 class="section-title text-center mb-6">About Me</h2>
+      <p class="text-lg text-gray-200 text-center max-w-3xl mx-auto">
+        I'm Kafi Chowdhury, a Computer Science student at Brac University, passionate about crafting innovative web and system solutions. My expertise lies in building dynamic applications and solving complex problems with clean, efficient code.
+      </p>
+    </section>
+
+    <!-- Education -->
+    <section id="education" class="my-12">
+      <h2 class="section-title text-center mb-6">Education</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card bg-blue-800 p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-yellow-300">BSc in Computer Science & Engineering</h3>
+          <p class="text-gray-200">Brac University, Dhaka</p>
+          <p class="text-gray-300">2022 - 2026 (Expected)</p>
+        </div>
+        <div class="card bg-blue-800 p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-yellow-300">A Levels (Edexcel)</h3>
+          <p class="text-gray-200">Cordova International School and College, Dhaka</p>
+          <p class="text-gray-300">2020 - 2021</p>
+        </div>
+        <div class="card bg-blue-800 p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-yellow-300">O Levels (Edexcel)</h3>
+          <p class="text-gray-200">Cordova International School and College, Dhaka</p>
+          <p class="text-gray-300">2018 - 2019</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="my-12">
+      <h2 class="section-title text-center mb-6">Skills</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card bg-blue-800 p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-yellow-300">Programming Languages</h3>
+          <div class="mt-2">
+            <p>Python</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 90%"></div></div>
+            <p class="mt-2">PHP</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 85%"></div></div>
+            <p class="mt-2">C</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 80%"></div></div>
+          </div>
+        </div>
+        <div class="card bg-blue-800 p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-yellow-300">Tools & Frameworks</h3>
+          <div class="mt-2">
+            <p>MySQL</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 80%"></div></div>
+            <p class="mt-2">XAMPP</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 70%"></div></div>
+            <p class="mt-2">3D Image Designer</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 85%"></div></div>
+            <p class="mt-2">Content Writing</p>
+            <div class="skill-bar"><div class="skill-progress" style="width: 80%"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects" class="my-12">
+      <h2 class="section-title text-center mb-6">Projects</h2>
+      <div class="flex justify-center mb-6 space-x-4">
+        <button class="filter-btn px-4 py-2 bg-blue-700 text-white rounded-lg active" data-filter="all">All</button>
+        <button class="filter-btn px-4 py-2 bg-blue-700 text-white rounded-lg" data-filter="web">Web</button>
+        <button class="filter-btn px-4 py-2 bg-blue-700 text-white rounded-lg" data-filter="system">System</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 project-list">
+        <div class="card bg-blue-800 p-6 rounded-lg" data-category="web">
+          <h3 class="text-xl font-semibold text-yellow-300">MindBalance</h3>
+          <p class="text-sm text-gray-300">Web Developer, Database Administrator | May 2, 2025</p>
+          <p class="text-gray-200">Developed a responsive web platform for patients and doctors using HTML, CSS, and PHP. Integrated MySQL via XAMPP for dynamic data management.</p>
+        </div>
+        <div class="card bg-blue-800 p-6 rounded-lg" data-category="system">
+          <h3 class="text-xl font-semibold text-yellow-300">Custom Linux Shell</h3>
+          <p class="text-sm text-gray-300">Developer | April 27, 2025</p>
+          <p class="text-gray-200">Built a Linux shell in C, implementing read, write, print, and history functionalities with custom input methods.</p>
+        </div>
+        <div class="card bg-blue-800 p-6 rounded-lg" data-category="system">
+          <h3 class="text-xl font-semibold text-yellow-300">Very Simple File System Checker</h3>
+          <p class="text-sm text-gray-300">Developer | May 6, 2025</p>
+          <p class="text-gray-200">Created a C-based file system checker to detect and repair corrupted structures, including supernodes and inode/data bitmaps.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Design -->
+    <section id="design" class="my-12">
+      <h2 class="section-title text-center mb-6">Design</h2>
+      <div class="flex justify-center space-x-4 flex-wrap">
+        <div class="flip-card" data-category="design">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <h3 class="text-xl font-semibold text-yellow-300 text-center">Mojo Can 3D Design</h3>
+            </div>
+            <div class="flip-card-back">
+              <img src="https://i.imgur.com/HhnKzhI.png" alt="Mojo Can Design 1" class="project-image">
+            </div>
+          </div>
+        </div>
+        <div class="flip-card" data-category="design">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <h3 class="text-xl font-semibold text-yellow-300 text-center">JoyRoom JR-T13 3D Design</h3>
+            </div>
+            <div class="flip-card-back">
+              <img src="https://i.imgur.com/nmIItiy.png" alt="JoyRoom JR-T13 Design" class="project-image">
+            </div>
+          </div>
+        </div>
+        <div class="flip-card" data-category="design">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <h3 class="text-xl font-semibold text-yellow-300 text-center">realme TECHLIFE BUDS-T100 3D Design</h3>
+            </div>
+            <div class="flip-card-back">
+              <img src="https://i.imgur.com/rHumebB.png" alt="realme BUDS-T100 Design" class="project-image">
+            </div>
+          </div>
+        </div>
+        <div class="flip-card" data-category="design">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <h3 class="text-xl font-semibold text-yellow-300 text-center">AMAZFIT POP 3S 3D Design</h3>
+            </div>
+            <div class="flip-card-back">
+              <img src="https://i.imgur.com/nsPMBuc.png" alt="AMAZFIT POP 3S Design" class="project-image">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section id="game" class="my-12">
+      <h2 class="section-title text-center mb-6">Play a Game!</h2>
+      <p class="text-lg text-gray-200 text-center mb-6">Test your memory with this tech-themed card matching game!</p>
+      <div class="text-center mb-4">
+        <button id="startGame" class="px-6 py-3 bg-yellow-400 text-blue-900 rounded-lg hover:bg-yellow-500">Start Game</button>
+        <p id="gameStatus" class="mt-4 text-lg text-gray-200"></p>
+      </div>
+      <div id="gameBoard" class="grid grid-cols-4 gap-4 max-w-xl mx-auto"></div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="my-12">
+      <h2 class="section-title text-center mb-6">Contact Me</h2>
+      <p class="text-lg text-gray-200 text-center">Let's connect to discuss opportunities or collaborate on exciting projects!</p>
+      <p class="mt-4 text-center">
+        Email: <a href="mailto:kafichowdhury9696@gmail.com" class="text-yellow-300 hover:underline">kafichowdhury9696@gmail.com</a><br>
+        Phone: +8801712758545<br>
+        GitHub: <a href="https://github.com/Kafi-Chowdhury" target="_blank" class="text-yellow-300 hover:underline">Kafi-Chowdhury</a><br>
+        Drive: <a href="https://drive.google.com/drive/folders/1rwvHhmdE3CW3TJFzwrGPT2RDhsRzTa55?usp=sharing" target="_blank" class="text-yellow-300 hover:underline">My Drive</a>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // Smooth Scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // Project Filter
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const projectCards = document.querySelectorAll('.project-list .card');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        projectCards.forEach(card => {
+          if (filter === 'all' || card.dataset.category === filter) {
+            card.style.display = 'block';
+            gsap.fromTo(card, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Skill Bar Animation
+    const skillBars = document.querySelectorAll('.skill-progress');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          skillBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            gsap.to(bar, { width, duration: 1, ease: 'power2.out' });
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    observer.observe(document.getElementById('skills'));
+
+    // Memory Match Game
+    const gameBoard = document.getElementById('gameBoard');
+    const startGameBtn = document.getElementById('startGame');
+    const gameStatus = document.getElementById('gameStatus');
+    const icons = ['🐍', '🐍', '🌐', '🌐', '💾', '💾', '🖥️', '🖥️', '📊', '📊', '🔧', '🔧', '📝', '📝', '⚙️', '⚙️'];
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let matchesFound = 0;
+
+    function createBoard() {
+      gameBoard.innerHTML = '';
+      const shuffledIcons = icons.sort(() => Math.random() - 0.5);
+      shuffledIcons.forEach(icon => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+          <div class="game-card-inner">
+            <div class="game-card-front">?</div>
+            <div class="game-card-back">${icon}</div>
+          </div>`;
+        card.addEventListener('click', flipCard);
+        gameBoard.appendChild(card);
+      });
+    }
+
+    function flipCard() {
+      if (lockBoard || this === firstCard) return;
+      this.classList.add('flipped');
+      if (!firstCard) {
+        firstCard = this;
+        return;
+      }
+      secondCard = this;
+      checkMatch();
+    }
+
+    function checkMatch() {
+      lockBoard = true;
+      const firstIcon = firstCard.querySelector('.game-card-back').textContent;
+      const secondIcon = secondCard.querySelector('.game-card-back').textContent;
+      if (firstIcon === secondIcon) {
+        matchesFound++;
+        resetBoard();
+        if (matchesFound === icons.length / 2) {
+          gameStatus.textContent = 'Congratulations! You won!';
+        }
+      } else {
+        setTimeout(() => {
+          firstCard.classList.remove('flipped');
+          secondCard.classList.remove('flipped');
+          resetBoard();
+        }, 1000);
+      }
+    }
+
+    function resetBoard() {
+      [firstCard, secondCard, lockBoard] = [null, null, false];
+    }
+
+    startGameBtn.addEventListener('click', () => {
+      matchesFound = 0;
+      gameStatus.textContent = 'Find all matching pairs!';
+      createBoard();
+    });
+
+    // GSAP Animations
+    gsap.from('header h1', { opacity: 0, y: -50, duration: 1, delay: 0.5 });
+    gsap.from('nav a', { opacity: 0, y: 20, stagger: 0.2, duration: 1, delay: 1 });
+    gsap.from('.section-title', { opacity: 0, y: 20, duration: 1, stagger: 0.3, scrollTrigger: { trigger: 'main', start: 'top 80%' } });
+  </script>
+</body>
+</html>
